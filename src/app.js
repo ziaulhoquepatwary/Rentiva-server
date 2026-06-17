@@ -1,13 +1,29 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import { toNodeHandler } from "better-auth/node";
 
-const app = express();
+const createApp = (auth) => {
+    const app = express();
 
-app.use(cors());
+    app.use(cors({
+        origin: [
+            process.env.FRONTEND_URL,
+            "http://localhost:3000",
+        ].filter(Boolean),
+        credentials: true
+    }));
 
-app.get("/", (req, res) => {
-    res.send("Rentiva server is running successfully");
-});
+    app.use(cookieParser());
+    app.use(express.json());
 
-export default app;
+    app.all("/api/auth/*splat", toNodeHandler(auth));
+
+    app.get("/", (req, res) => {
+        res.send("Rentiva server is running successfully");
+    });
+
+    return app;
+}
+
+export default createApp;
