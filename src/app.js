@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import { toNodeHandler } from "better-auth/node";
+import globalErrorHandler from "./utils/globalErrorHandler.js";
 
 const createApp = (auth) => {
     const app = express();
@@ -22,6 +23,8 @@ const createApp = (auth) => {
     app.get("/", (req, res) => {
         res.send("Rentiva server is running successfully");
     });
+
+    app.use(globalErrorHandler)
 
     return app;
 }
