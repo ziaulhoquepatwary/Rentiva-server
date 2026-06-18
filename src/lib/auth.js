@@ -28,7 +28,7 @@ export const createAuth = (db) => {
                     type: "string",
                 },
                 status: {
-                    type: "string", // "active", "suspended", "blocked"
+                    type: "string", // pending, approved, rejected
                 },
                 phone: {
                     type: "string",
