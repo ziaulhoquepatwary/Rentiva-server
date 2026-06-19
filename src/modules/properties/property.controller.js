@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import AppError from "../../utils/AppError.js";
 import catchAsync from "../../utils/catchAsync.js";
 import Property from "./property.model.js";
@@ -84,4 +85,27 @@ export const getAllProperty = catchAsync(async (req, res) => {
         },
         data: properties,
     });
-})
+});
+
+export const getSingleProperty = catchAsync(async (req, res) => {
+    const { id } = req.params;
+
+    const property = await Property.findById(id);
+
+    if (!property) {
+        throw new AppError(404, "Property not found");
+    }
+
+    const owner = await mongoose.connection.collection("user").findOne(
+        {_id: new mongoose.Types.ObjectId(property.ownerId)}
+    )
+
+    res.status(200).json({
+        success: true,
+        message: "Property fetched successfully",
+        data: {
+            property,
+            ownerName: owner.name || "Unknown User"
+        },
+    });
+});

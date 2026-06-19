@@ -60,8 +60,7 @@ const propertySchema = new Schema(
             default: ''
         },
         ownerId: {
-            type: Schema.Types.ObjectId,
-            ref: 'User',
+            type: String,
             required: [true, 'Owner information is required']
         }
     },
