@@ -97,7 +97,7 @@ export const getSingleProperty = catchAsync(async (req, res) => {
     }
 
     const owner = await mongoose.connection.collection("user").findOne(
-        {_id: new mongoose.Types.ObjectId(property.ownerId)}
+        { _id: new mongoose.Types.ObjectId(property.ownerId) }
     )
 
     res.status(200).json({
@@ -109,3 +109,36 @@ export const getSingleProperty = catchAsync(async (req, res) => {
         },
     });
 });
+
+export const getMyProperties = catchAsync(async (req, res) => {
+    const userId = req.user.id
+
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 12;
+
+    const skip = (page - 1) * limit;
+
+    const filter = {
+        ownerId: userId,
+    };
+
+    const total = await Property.countDocuments(filter);
+
+    const properties = await Property.find(filter)
+        .select("title location propertyType rent images")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
+
+    res.status(200).json({
+        success: true,
+        message: "My properties fetched successfully",
+        meta: {
+            page,
+            limit,
+            total,
+            totalPage: Math.ceil(total / limit),
+        },
+        data: properties,
+    });
+})
