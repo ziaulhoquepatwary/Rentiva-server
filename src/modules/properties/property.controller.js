@@ -141,4 +141,41 @@ export const getMyProperties = catchAsync(async (req, res) => {
         },
         data: properties,
     });
+});
+
+export const updateProperty = catchAsync(async (req, res) => {
+    const { id } = req.params;
+    const userId = req.user.id;
+    const body = req.body;
+
+    const property = await Property.findById(id);
+
+    if (!property) {
+        throw new AppError(404, "Property not found");
+    }
+
+    // Only owner can update
+    if (property.ownerId.toString() !== userId) {
+        throw new AppError(403, "You are not authorized");
+    }
+
+    // Prevent updating protected fields
+    delete req.body.status;
+    delete req.body.rejectionFeedback;
+    delete req.body.ownerId;
+
+    const updatedProperty = await Property.findByIdAndUpdate(
+        id,
+        body,
+        {
+            new: true,
+            runValidators: true,
+        }
+    );
+
+    res.status(200).json({
+        success: true,
+        message: "Property updated successfully",
+        data: updatedProperty,
+    });
 })
