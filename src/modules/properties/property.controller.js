@@ -178,4 +178,33 @@ export const updateProperty = catchAsync(async (req, res) => {
         message: "Property updated successfully",
         data: updatedProperty,
     });
+});
+
+export const updatePropertyStatus = catchAsync(async (req, res) => {
+    const { id } = req.params;
+    const { status, rejectionFeedback } = req.body;
+
+    const property = await Property.findById(id);
+
+    if (!property) {
+        throw new AppError(404, "Property not found");
+    }
+
+    const updatedProperty = await Property.findByIdAndUpdate(
+        id,
+        {
+            status,
+            rejectionFeedback,
+        },
+        {
+            new: true,
+            runValidators: true,
+        }
+    );
+
+    res.status(200).json({
+        success: true,
+        message: "Property status updated successfully",
+        data: updatedProperty,
+    });
 })
