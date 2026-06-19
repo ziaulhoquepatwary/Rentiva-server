@@ -35,9 +35,4 @@ export const propertyValidationSchema = z.object({
         required_error: 'Property images are required'
     }).min(1, 'At least one image must be provided'),
     extraFeatures: z.string().optional(),
-    status: z.enum(['Pending', 'Approved', 'Rejected']).default('Pending'),
-    rejectionFeedback: z.string().optional(),
-    ownerId: z.string({
-        required_error: 'Owner ID is required'
-    })
 });

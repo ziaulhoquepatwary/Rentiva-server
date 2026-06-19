@@ -3,6 +3,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import { toNodeHandler } from "better-auth/node";
 import globalErrorHandler from "./utils/globalErrorHandler.js";
+import propertyRoute from "./modules/properties/property.routes.js"
 
 const createApp = (auth) => {
     const app = express();
@@ -19,6 +20,8 @@ const createApp = (auth) => {
     app.use(express.json());
 
     app.all("/api/auth/*splat", toNodeHandler(auth));
+
+    app.use("/api/properties", propertyRoute);
 
     app.get("/", (req, res) => {
         res.send("Rentiva server is running successfully");
