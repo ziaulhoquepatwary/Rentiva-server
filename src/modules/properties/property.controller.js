@@ -7,7 +7,7 @@ import { propertyValidationSchema } from "./property.validation.js";
 
 export const createProperty = catchAsync(async (req, res) => {
     const body = req.body;
-    let currentUser = req.id;
+    let currentUser = req.user.id;
 
     const parsed = propertyValidationSchema.safeParse(body);
 
@@ -206,5 +206,22 @@ export const updatePropertyStatus = catchAsync(async (req, res) => {
         success: true,
         message: "Property status updated successfully",
         data: updatedProperty,
+    });
+});
+
+export const deleteProperty = catchAsync(async (req, res) => {
+    const { id } = req.params;
+
+    const property = await Property.findById(id);
+
+    if (!property) {
+        throw new AppError(404, "Property not found");
+    }
+
+    await Property.findByIdAndDelete(id);
+
+    res.status(200).json({
+        success: true,
+        message: "Property deleted successfully",
     });
 })

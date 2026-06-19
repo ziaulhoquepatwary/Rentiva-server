@@ -1,5 +1,5 @@
 import express from "express";
-import { createProperty, getAllProperty, getMyProperties, getSingleProperty, updateProperty, updatePropertyStatus } from "./property.controller.js";
+import { createProperty, deleteProperty, getAllProperty, getMyProperties, getSingleProperty, updateProperty, updatePropertyStatus } from "./property.controller.js";
 
 
 const router = express.Router();
@@ -10,6 +10,7 @@ router.get("/:id", getSingleProperty)
 router.post("/", createProperty);
 router.patch("/:id", updateProperty)
 router.patch("/admin/:id", updatePropertyStatus)
+router.delete("/:id", deleteProperty)
 
 
 export default router;
