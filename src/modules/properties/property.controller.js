@@ -31,7 +31,7 @@ export const createProperty = catchAsync(async (req, res) => {
 });
 
 export const getAllProperty = catchAsync(async (req, res) => {
-    const { location, propertyType, minPrice, maxPrice, } = req.query;
+    const { location, propertyType, minPrice, maxPrice, sortBy } = req.query;
     const page = req.query.page || 1;
     const limit = req.query.limit || 12;
 
@@ -60,6 +60,27 @@ export const getAllProperty = catchAsync(async (req, res) => {
         if (maxPrice) {
             filter.rent.$lte = Number(maxPrice);
         }
+    }
+
+    let sortOption = { createdAt: -1 };
+
+    switch (sortBy) {
+        case "price_asc":
+            sortOption = { rent: 1 };
+            break;
+
+        case "price_desc":
+            sortOption = { rent: -1 };
+            break;
+
+        case "oldest":
+            sortOption = { createdAt: 1 };
+            break;
+
+        case "newest":
+        default:
+            sortOption = { createdAt: -1 };
+            break;
     }
 
     const currentPage = Number(page);
