@@ -10,13 +10,21 @@ export const propertyValidationSchema = z.object({
     location: z.string({
         required_error: 'Location is required'
     }),
-    propertyType: z.string({
-        required_error: 'Property type is required'
-    }),
+    propertyType: z.enum(
+        ['apartment', 'house', 'villa', 'cottage', 'studio', 'duplex', 'penthouse', 'commercial', 'office', 'other'],
+        {
+            errorMap: (issue, ctx) => {
+                if (issue.code === 'invalid_enum_value' || ctx.data === "") {
+                    return { message: 'Property type is required' };
+                }
+                return { message: 'Invalid property type' };
+            }
+        }
+    ),
     rent: z.number({
         required_error: 'Rent amount is required'
     }).positive('Rent must be a positive number'),
-    rentType: z.enum(['Monthly', 'Weekly', 'Daily'], {
+    rentType: z.enum(['Yearly', 'Monthly', 'Weekly', 'Daily'], {
         required_error: 'Rent type must be Monthly, Weekly, or Daily'
     }),
     bedrooms: z.number({

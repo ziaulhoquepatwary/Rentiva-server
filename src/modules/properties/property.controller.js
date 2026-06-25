@@ -91,7 +91,7 @@ export const getAllProperty = catchAsync(async (req, res) => {
 
     const properties = await Property.find(filter)
         .select("title location propertyType rent images")
-        .sort({ createdAt: -1 })
+        .sort(sortOption)
         .skip(skip)
         .limit(perPage);
 

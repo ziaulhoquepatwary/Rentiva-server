@@ -16,15 +16,20 @@ const propertySchema = new Schema(
         },
         propertyType: {
             type: String,
-            required: [true, 'Property type is required']
+            required: [true, 'Property type is required'],
+            enum: {
+                values: ['apartment', 'house', 'villa', 'cottage', 'studio', 'duplex', 'penthouse', 'commercial', 'office', 'other'],
+                message: '{VALUE} is not a valid property type'
+            }
         },
+
         rent: {
             type: Number,
             required: [true, 'Rent amount is required']
         },
         rentType: {
             type: String,
-            enum: ['Monthly', 'Weekly', 'Daily'],
+            enum: ["Yearly", 'Monthly', 'Weekly', 'Daily'],
             required: [true, 'Rent type is required']
         },
         bedrooms: {
