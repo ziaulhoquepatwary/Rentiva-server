@@ -8,38 +8,22 @@ const bookingSchema = new Schema(
             required: [true, 'Property ID is required']
         },
         tenantId: {
-            type: Schema.Types.ObjectId,
-            ref: 'User',
+            type: String,
             required: [true, 'Tenant ID is required']
         },
-        moveInDate: {
-            type: Date,
-            required: [true, 'Move-in date is required']
-        },
-        contactNumber: {
+        stripeSessionId: { type: String, required: true, unique: true },
+        payableAmount: { type: Number, required: true, },
+        durationType: {
             type: String,
-            required: [true, 'Contact number is required']
+            enum: ["Yearly", 'Monthly', 'Weekly', 'Daily'],
+            required: true,
         },
-        additionalNotes: {
-            type: String
-        },
-        amountPaid: {
-            type: Number,
-            required: [true, 'Amount paid is required']
-        },
-        transactionId: {
-            type: String,
-            required: [true, 'Transaction ID is required']
-        },
-        bookingStatus: {
-            type: String,
-            enum: ['Pending', 'Approved', 'Rejected'],
-            default: 'Pending'
-        },
+        startDate: { type: String, required: true, },
+        endDate: { type: String, required: true, },
         paymentStatus: {
             type: String,
-            enum: ['Pending', 'Paid'],
-            default: 'Paid'
+            enum: ["pending", "paid", "failed"],
+            default: "pending",
         }
     },
     {
