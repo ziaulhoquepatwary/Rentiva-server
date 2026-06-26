@@ -4,6 +4,7 @@ import cookieParser from "cookie-parser";
 import { toNodeHandler } from "better-auth/node";
 import globalErrorHandler from "./utils/globalErrorHandler.js";
 import propertyRoute from "./modules/properties/property.routes.js"
+import BookingRoutes from "./modules/bookings/booking.routes.js"
 
 const createApp = (auth) => {
     const app = express();
@@ -17,6 +18,9 @@ const createApp = (auth) => {
     }));
 
     app.use(cookieParser());
+
+    app.use(BookingRoutes);
+
     app.use(express.json());
 
     app.all("/api/auth/*splat", toNodeHandler(auth));
