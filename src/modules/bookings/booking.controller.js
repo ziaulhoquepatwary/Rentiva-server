@@ -7,9 +7,9 @@ import { bookingValidationSchema } from "./booking.validation.js";
 
 export const handleStripeWebhook = catchAsync(async (req, res) => {
     const sig = req.headers["stripe-signature"];
-    
+
     console.log(sig);
-    
+
     let event;
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -71,5 +71,58 @@ export const handleStripeWebhook = catchAsync(async (req, res) => {
     res.status(200).json({
         success: true,
         message: "Webhook event processed and database execution completed successfully",
+    });
+});
+
+export const getTenantBookings = catchAsync(async (req, res) => {
+    const userId = req.user.id;
+
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const bookingType = req.query.type || "running";
+
+    // Convert current date to "YYYY-MM-DD" string format matching DB structure
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
+    const currentDateString = `${year}-${month}-${day}`;
+
+    const filter = {
+        tenantId: userId,
+        paymentStatus: "paid"
+    };
+
+    if (bookingType === "running") {
+        // End date string is greater than or equal to current date string
+        filter.endDate = { $gte: currentDateString };
+    } else if (bookingType === "previous") {
+        // End date string is less than current date string
+        filter.endDate = { $lt: currentDateString };
+    }
+
+    const total = await Booking.countDocuments(filter);
+
+    const bookings = await Booking.find(filter)
+        .populate({
+            path: "propertyId",
+            select: "title location propertyType rent images"
+        })
+        .sort({ startDate: -1 })
+        .skip(skip)
+        .limit(limit);
+
+    res.status(200).json({
+        success: true,
+        message: `Tenant ${bookingType} bookings fetched successfully`,
+        meta: {
+            page,
+            limit,
+            total,
+            totalPage: Math.ceil(total / limit),
+        },
+        data: bookings,
     });
 });

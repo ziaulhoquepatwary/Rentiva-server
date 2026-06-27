@@ -8,8 +8,7 @@ import BookingRoutes from "./modules/bookings/booking.routes.js"
 
 const createApp = (auth) => {
     const app = express();
-    
-    app.use("/api/bookings", BookingRoutes);
+
 
     app.use(cors({
         origin: [
@@ -20,6 +19,9 @@ const createApp = (auth) => {
     }));
 
     app.use(cookieParser());
+
+    app.use("/api/bookings", BookingRoutes);
+
     app.use(express.json());
 
     app.all("/api/auth/*splat", toNodeHandler(auth));
