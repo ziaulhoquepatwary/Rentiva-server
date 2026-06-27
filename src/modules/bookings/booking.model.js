@@ -16,6 +16,9 @@ const bookingSchema = new Schema(
             type: String,
             required: [true, 'Tenant ID is required']
         },
+        tenantName: {type: String},
+        tenantEmail: {type: String},
+        tenantImage: {type: String},
         stripeSessionId: { type: String, required: true, unique: true },
         payableAmount: { type: Number, required: true, },
         durationType: {

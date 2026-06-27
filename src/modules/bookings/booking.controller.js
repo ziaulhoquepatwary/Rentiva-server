@@ -4,6 +4,7 @@ import AppError from "../../utils/AppError.js";
 import catchAsync from "../../utils/catchAsync.js";
 import { bookingValidationSchema } from "./booking.validation.js";
 import Property from "../properties/property.model.js";
+import mongoose from "mongoose";
 
 
 export const handleStripeWebhook = catchAsync(async (req, res) => {
@@ -30,6 +31,14 @@ export const handleStripeWebhook = catchAsync(async (req, res) => {
         const { userId, propertyId, durationType } = session.metadata;
         const payableAmount = session.amount_total / 100;
         const stripeSessionId = session.id;
+
+        const tenant = await mongoose.connection.collection("user").findOne(
+            { _id: new mongoose.Types.ObjectId(userId) }
+        );
+
+        if (!tenant) {
+            throw new AppError(404, "Tenant (User) not found in database");
+        }
 
         const propertyInfo = await Property.findById(propertyId);
         if (!propertyInfo) {
@@ -62,6 +71,9 @@ export const handleStripeWebhook = catchAsync(async (req, res) => {
             propertyId,
             ownerId,
             tenantId: userId,
+            tenantName: tenant.name || "",
+            tenantEmail: tenant.email || "",
+            tenantImage: tenant.image || "",
             stripeSessionId,
             payableAmount,
             durationType,
@@ -130,6 +142,58 @@ export const getTenantBookings = catchAsync(async (req, res) => {
     res.status(200).json({
         success: true,
         message: `Tenant ${bookingType} bookings fetched successfully`,
+        meta: {
+            page,
+            limit,
+            total,
+            totalPage: Math.ceil(total / limit),
+        },
+        data: bookings,
+    });
+});
+
+
+export const getOwnerBookedProperties = catchAsync(async (req, res) => {
+    const userId = req.user.id;
+
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const tabType = req.query.type || "running";
+
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
+    const currentDateString = `${year}-${month}-${day}`;
+
+    const filter = {
+        ownerId: userId,
+        paymentStatus: "paid"
+    };
+
+    if (tabType === "running") {
+        filter.endDate = { $gte: currentDateString };
+    } else if (tabType === "previous") {
+        filter.endDate = { $lt: currentDateString };
+    }
+
+    const total = await Booking.countDocuments(filter);
+
+    // Fetch and populate related data
+    const bookings = await Booking.find(filter)
+        .populate({
+            path: "propertyId",
+            select: "title location propertyType rent images"
+        })
+        .sort({ startDate: -1 })
+        .skip(skip)
+        .limit(limit);
+
+    res.status(200).json({
+        success: true,
+        message: `Owner ${tabType} booked properties fetched successfully`,
         meta: {
             page,
             limit,
