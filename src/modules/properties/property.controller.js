@@ -136,24 +136,26 @@ export const getMyProperties = catchAsync(async (req, res) => {
 
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 12;
-
     const skip = (page - 1) * limit;
+
+    const status = req.query.status || "Approved";
 
     const filter = {
         ownerId: userId,
+        status: status,
     };
 
     const total = await Property.countDocuments(filter);
 
     const properties = await Property.find(filter)
-        .select("title location propertyType rent images")
+        .select("title location propertyType rent images status rejectionFeedback")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit);
 
     res.status(200).json({
         success: true,
-        message: "My properties fetched successfully",
+        message: `My ${status} properties fetched successfully`,
         meta: {
             page,
             limit,
