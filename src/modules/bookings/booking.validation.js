@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 export const bookingValidationSchema = z.object({
     propertyId: z.string({ required_error: "Property ID is required" }),
+    ownerId: z.string({ required_error: "Owner ID is required" }),
     tenantId: z.string({ required_error: "Tenant ID is required" }),
     stripeSessionId: z.string({ required_error: "Stripe Session ID is required" }),
     payableAmount: z.number({ required_error: "Payable Amount is required" }).positive(),

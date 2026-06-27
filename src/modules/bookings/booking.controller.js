@@ -3,6 +3,7 @@ import Booking from "./booking.model.js";
 import AppError from "../../utils/AppError.js";
 import catchAsync from "../../utils/catchAsync.js";
 import { bookingValidationSchema } from "./booking.validation.js";
+import Property from "../properties/property.model.js";
 
 
 export const handleStripeWebhook = catchAsync(async (req, res) => {
@@ -30,6 +31,12 @@ export const handleStripeWebhook = catchAsync(async (req, res) => {
         const payableAmount = session.amount_total / 100;
         const stripeSessionId = session.id;
 
+        const propertyInfo = await Property.findById(propertyId);
+        if (!propertyInfo) {
+            throw new AppError(404, "Property not found for booking");
+        }
+        const ownerId = propertyInfo.ownerId;
+
         // Timeline calculation alignment based on system date parameters
         const start = new Date();
         const end = new Date();
@@ -53,6 +60,7 @@ export const handleStripeWebhook = catchAsync(async (req, res) => {
 
         const bookingPayload = {
             propertyId,
+            ownerId,
             tenantId: userId,
             stripeSessionId,
             payableAmount,
@@ -66,6 +74,13 @@ export const handleStripeWebhook = catchAsync(async (req, res) => {
 
         // Construct Mongoose Document Instance mapping
         await Booking.create(bookingPayload);
+
+        //  bookingStatus Change- "Booked"
+        await Property.findByIdAndUpdate(
+            propertyId,
+            { bookingStatus: "Booked" },
+            { new: true, runValidators: true }
+        );
     }
 
     res.status(200).json({
@@ -96,10 +111,8 @@ export const getTenantBookings = catchAsync(async (req, res) => {
     };
 
     if (bookingType === "running") {
-        // End date string is greater than or equal to current date string
         filter.endDate = { $gte: currentDateString };
     } else if (bookingType === "previous") {
-        // End date string is less than current date string
         filter.endDate = { $lt: currentDateString };
     }
 

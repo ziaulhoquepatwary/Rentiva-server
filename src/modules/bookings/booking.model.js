@@ -7,6 +7,11 @@ const bookingSchema = new Schema(
             ref: 'Property',
             required: [true, 'Property ID is required']
         },
+        ownerId: {
+            type: Schema.Types.ObjectId,
+            ref: 'Property',
+            required: [true, 'Owner ID is required']
+        },
         tenantId: {
             type: String,
             required: [true, 'Tenant ID is required']

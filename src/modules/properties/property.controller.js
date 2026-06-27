@@ -19,6 +19,7 @@ export const createProperty = catchAsync(async (req, res) => {
         ...parsed.data,
         ownerId: currentUser,
         status: "Pending",
+        bookingStatus: "Available",
         rejectionFeedback: "",
     });
 

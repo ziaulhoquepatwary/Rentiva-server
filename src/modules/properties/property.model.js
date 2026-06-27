@@ -60,6 +60,11 @@ const propertySchema = new Schema(
             enum: ['Pending', 'Approved', 'Rejected'],
             default: 'Pending'
         },
+        bookingStatus: {
+            type: String,
+            enum: ['Available', 'Booked'],
+            default: 'Available'
+        },
         rejectionFeedback: {
             type: String,
             default: ''
