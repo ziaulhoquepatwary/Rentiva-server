@@ -114,7 +114,7 @@ export const getSingleProperty = catchAsync(async (req, res) => {
     const { id } = req.params;
     const userId = req.user?.id;
 
-    console.log(userId);
+    // console.log(userId);
     
 
     const property = await Property.findById(id);

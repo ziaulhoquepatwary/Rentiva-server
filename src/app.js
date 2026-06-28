@@ -6,6 +6,7 @@ import globalErrorHandler from "./utils/globalErrorHandler.js";
 import propertyRoute from "./modules/properties/property.routes.js"
 import BookingRoutes from "./modules/bookings/booking.routes.js"
 import FavoriteRoutes from "./modules/favorites/favorite.routes.js"
+import ReviewRoutes from "./modules/reviews/review.routes.js"
 
 const createApp = (auth) => {
     const app = express();
@@ -27,7 +28,8 @@ const createApp = (auth) => {
 
     app.all("/api/auth/*splat", toNodeHandler(auth));
     app.use("/api/properties", propertyRoute);
-    app.use("/api/favorites", FavoriteRoutes)
+    app.use("/api/favorites", FavoriteRoutes);
+    app.use("/api/reviews", ReviewRoutes)
 
     app.get("/", (req, res) => {
         res.send("Rentiva server is running successfully");

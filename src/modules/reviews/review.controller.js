@@ -15,7 +15,7 @@ export const createReview = catchAsync(async (req, res) => {
     }
 
     const property = await Property.findById(propertyId);
-    if (property) {
+    if (!property) {
         throw new AppError(404, "Property not found");
     }
 
@@ -47,5 +47,39 @@ export const createReview = catchAsync(async (req, res) => {
         success: true,
         message: "Review submitted successfully",
         data: newReview
+    });
+});
+
+export const getPropertyReviews = catchAsync(async (req, res) => {
+    const { propertyId } = req.params;
+
+    const reviews = await Review.find({ propertyId }).sort({ createdAt: -1 });
+
+    res.status(200).json({
+        success: true,
+        message: "Property reviews fetched successfully",
+        count: reviews.length,
+        data: reviews
+    });
+});
+
+export const deleteReview = catchAsync(async (req, res) => {
+    const { id } = req.params;
+    const userId = req.user?.id;
+
+    const review = await Review.findById(id);
+    if (!review) {
+        throw new AppError(404, "Review not found");
+    }
+
+    if (review.tenantId.toString() !== userId) {
+        throw new AppError(403, "You are not authorized to delete this review");
+    }
+
+    await Review.findByIdAndDelete(id);
+
+    res.status(200).json({
+        success: true,
+        message: "Review deleted successfully"
     });
 });
