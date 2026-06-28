@@ -2,7 +2,7 @@ import mongoose, { Schema, model } from 'mongoose';
 
 const favoriteSchema = new Schema(
     {
-        tenantId: {
+        userId: {
             type: Schema.Types.ObjectId,
             ref: 'User',
             required: [true, 'Tenant ID is required']

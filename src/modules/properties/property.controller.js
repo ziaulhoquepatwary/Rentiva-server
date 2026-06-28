@@ -3,6 +3,7 @@ import AppError from "../../utils/AppError.js";
 import catchAsync from "../../utils/catchAsync.js";
 import Property from "./property.model.js";
 import { propertyValidationSchema } from "./property.validation.js";
+import Favorite from "../favorites/favorite.model.js";
 
 
 export const createProperty = catchAsync(async (req, res) => {
@@ -111,11 +112,21 @@ export const getAllProperty = catchAsync(async (req, res) => {
 
 export const getSingleProperty = catchAsync(async (req, res) => {
     const { id } = req.params;
+    const userId = req.user?.id;
+
+    console.log(userId);
+    
 
     const property = await Property.findById(id);
 
     if (!property) {
         throw new AppError(404, "Property not found");
+    }
+
+    let isSaved = false;
+    if (userId) {
+        const favorite = await Favorite.findOne({ userId, propertyId: id });
+        isSaved = !!favorite;
     }
 
     const owner = await mongoose.connection.collection("user").findOne(
@@ -127,7 +138,8 @@ export const getSingleProperty = catchAsync(async (req, res) => {
         message: "Property fetched successfully",
         data: {
             property,
-            ownerName: owner.name || "Unknown User"
+            ownerName: owner?.name || "Unknown User",
+            isSaved
         },
     });
 });
