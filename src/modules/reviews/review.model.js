@@ -12,6 +12,18 @@ const reviewSchema = new Schema(
             ref: 'User',
             required: [true, 'Tenant ID is required']
         },
+        tenantName: {
+            type: String,
+            require: true
+        },
+        tenantEmail: {
+            type: String,
+            require: true
+        },
+        tenantImage: {
+            type: String,
+            require: true
+        },
         rating: {
             type: Number,
             required: [true, 'Rating is required'],
