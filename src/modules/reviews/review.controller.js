@@ -4,8 +4,6 @@ import catchAsync from "../../utils/catchAsync.js";
 import Property from "../properties/property.model.js";
 import Review from "./review.model.js";
 
-
-
 export const createReview = catchAsync(async (req, res) => {
     const { propertyId, rating, comment } = req.body;
     const userId = req.user?.id;
@@ -38,7 +36,7 @@ export const createReview = catchAsync(async (req, res) => {
         tenantId: userId,
         tenantName: tenant.name || "Anonymous",
         tenantEmail: tenant.email,
-        tenantImage: tenant.image || "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTZLiDzOwzVVxlpY-1q0ElGEiZ43hV-MwnAbuaGY8KzOg&s=10",
+        tenantImage: tenant.image || "",
         rating: Number(rating),
         comment
     });
@@ -81,5 +79,18 @@ export const deleteReview = catchAsync(async (req, res) => {
     res.status(200).json({
         success: true,
         message: "Review deleted successfully"
+    });
+});
+
+export const getHomeTopReviews = catchAsync(async (req, res) => {
+    const topReviews = await Review.find({ rating: 5 })
+        .sort({ createdAt: -1 })
+        .limit(8);
+
+    res.status(200).json({
+        success: true,
+        message: "Top home page reviews fetched successfully",
+        count: topReviews.length,
+        data: topReviews
     });
 });
