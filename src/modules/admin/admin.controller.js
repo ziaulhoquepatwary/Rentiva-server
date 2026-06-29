@@ -35,3 +35,37 @@ export const getAllUser = catchAsync(async (req, res) => {
         data: users,
     });
 });
+
+export const updateUserRole = catchAsync(async (req, res) => {
+    const { userId } = req.params;
+    const { role } = req.body;
+
+    const validRoles = ["tenant", "owner", "admin"];
+    if (!validRoles.includes(role)) {
+        return res.status(400).json({
+            success: false,
+            message: "Invalid role. Role must be tenant, owner, or admin."
+        });
+    }
+
+    const db = mongoose.connection.collection("user");
+
+    const result = await db.findOneAndUpdate(
+        { _id: new mongoose.Types.ObjectId(userId) },
+        { $set: { role: role } },
+        { returnDocument: "after" }
+    );
+
+    if (!result) {
+        return res.status(404).json({
+            success: false,
+            message: "User not found"
+        });
+    }
+
+    res.status(200).json({
+        success: true,
+        message: `User role successfully updated to ${role}`,
+        data: result
+    });
+});
