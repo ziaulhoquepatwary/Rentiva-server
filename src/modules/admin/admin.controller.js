@@ -69,3 +69,49 @@ export const updateUserRole = catchAsync(async (req, res) => {
         data: result
     });
 });
+
+export const updatePendingProperty = catchAsync(async (req, res) => {
+    const { propertyId } = req.params;
+    const { status, rejectionFeedback } = req.body;
+
+    const validStatuses = ["Approved", "Rejected"];
+    if (!validStatuses.includes(status)) {
+        return res.status(400).json({
+            success: false,
+            message: "Invalid status. Admin can only set status to Approved or Rejected."
+        });
+    }
+
+    if (status === "Rejected" && (!rejectionFeedback || rejectionFeedback.trim() === "")) {
+        return res.status(400).json({
+            success: false,
+            message: "Rejection feedback is required when rejecting a property."
+        });
+    }
+
+    const updateData = { status };
+    if (status === "Rejected") {
+        updateData.rejectionFeedback = rejectionFeedback;
+    } else {
+        updateData.rejectionFeedback = "";
+    }
+
+    const updatedProperty = await Property.findByIdAndUpdate(
+        propertyId,
+        { $set: updateData },
+        { new: true, runValidators: true }
+    );
+
+    if (!updatedProperty) {
+        return res.status(404).json({
+            success: false,
+            message: "Property not found."
+        });
+    }
+
+    res.status(200).json({
+        success: true,
+        message: `Property status successfully updated to ${status}.`,
+        data: updatedProperty
+    });
+});
