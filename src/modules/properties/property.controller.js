@@ -38,7 +38,8 @@ export const getAllProperty = catchAsync(async (req, res) => {
     const limit = req.query.limit || 12;
 
     const filter = {
-        // status: "Approved",
+        status: "Approved",
+        // bookingStatus: "Booked",
     }
 
     if (location) {
@@ -115,7 +116,7 @@ export const getSingleProperty = catchAsync(async (req, res) => {
     const userId = req.user?.id;
 
     // console.log(userId);
-    
+
 
     const property = await Property.findById(id);
 

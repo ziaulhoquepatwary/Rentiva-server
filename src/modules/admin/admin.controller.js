@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import catchAsync from "../../utils/catchAsync.js";
+import Property from "../properties/property.model.js";
 
 export const getAllUser = catchAsync(async (req, res) => {
     const { search, role, page = 1, limit = 12 } = req.query;
@@ -67,6 +68,76 @@ export const updateUserRole = catchAsync(async (req, res) => {
         success: true,
         message: `User role successfully updated to ${role}`,
         data: result
+    });
+});
+
+export const getPendingProperties = catchAsync(async (req, res) => {
+    const { page = 1, limit = 10 } = req.query;
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const parsedLimit = parseInt(limit);
+
+    const totalProperties = await Property.countDocuments({ status: "Pending" });
+
+    const properties = await Property.aggregate([
+        { $match: { status: "Pending" } },
+        {
+            $addFields: {
+                ownerObjectId: { $toObjectId: "$ownerId" }
+            }
+        },
+        {
+            $lookup: {
+                from: "user",
+                localField: "ownerObjectId",
+                foreignField: "_id",
+                as: "ownerDetails"
+            }
+        },
+        {
+            $unwind: {
+                path: "$ownerDetails",
+                preserveNullAndEmptyArrays: true
+            }
+        },
+        {
+            $project: {
+                _id: 1,
+                title: 1,
+                description: 1,
+                location: 1,
+                propertyType: 1,
+                rent: 1,
+                rentType: 1,
+                bedrooms: 1,
+                bathrooms: 1,
+                propertySize: 1,
+                amenities: 1,
+                images: 1,
+                status: 1,
+                bookingStatus: 1,
+                ownerId: 1,
+                createdAt: 1,
+                ownerInfo: {
+                    name: "$ownerDetails.name",
+                    email: "$ownerDetails.email",
+                    phone: "$ownerDetails.phone",
+                    image: "$ownerDetails.image"
+                }
+            }
+        },
+        { $sort: { createdAt: -1 } },
+        { $skip: skip },
+        { $limit: parsedLimit }
+    ]);
+
+    res.status(200).json({
+        success: true,
+        count: properties.length,
+        totalProperties,
+        totalPages: Math.ceil(totalProperties / parsedLimit),
+        currentPage: parseInt(page),
+        data: properties,
     });
 });
 
