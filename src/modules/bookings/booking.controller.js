@@ -10,7 +10,7 @@ import mongoose from "mongoose";
 export const handleStripeWebhook = catchAsync(async (req, res) => {
     const sig = req.headers["stripe-signature"];
 
-    console.log(sig);
+    // console.log(sig);
 
     let event;
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -37,7 +37,7 @@ export const handleStripeWebhook = catchAsync(async (req, res) => {
         );
 
         if (!tenant) {
-            throw new AppError(404, "Tenant (User) not found in database");
+            throw new AppError(404, "Tenant not found in database");
         }
 
         const propertyInfo = await Property.findById(propertyId);
