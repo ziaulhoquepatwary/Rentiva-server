@@ -212,3 +212,26 @@ export const getRunningBookedProperties = catchAsync(async (req, res) => {
     });
 });
 
+export const getAllBookingHistory = catchAsync(async (req, res) => {
+    const { page = 1, limit = 10 } = req.query;
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const parsedLimit = parseInt(limit);
+
+    const [bookings, totalBookings] = await Promise.all([
+        Booking.find({}, { payableAmount: 0 })
+            .skip(skip)
+            .limit(parsedLimit)
+            .sort({ createdAt: -1 }),
+        Booking.countDocuments({})
+    ]);
+
+    res.status(200).json({
+        success: true,
+        count: bookings.length,
+        totalBookings,
+        totalPages: Math.ceil(totalBookings / parsedLimit),
+        currentPage: parseInt(page),
+        data: bookings
+    });
+});

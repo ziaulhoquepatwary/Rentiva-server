@@ -1,5 +1,5 @@
 import express from "express";
-import { getAllUser, getPendingProperties, getRunningBookedProperties, updatePendingProperty, updateUserRole } from "./admin.controller.js";
+import { getAllBookingHistory, getAllUser, getPendingProperties, getRunningBookedProperties, updatePendingProperty, updateUserRole } from "./admin.controller.js";
 
 const router = express.Router();
 
@@ -8,5 +8,6 @@ router.patch("/users/:userId/role", updateUserRole);
 router.get("/properties/pending", getPendingProperties);
 router.patch("/properties/:propertyId/status", updatePendingProperty);
 router.patch("/properties/booked", getRunningBookedProperties);
+router.patch("/bookings/history", getAllBookingHistory);
 
 export default router;
