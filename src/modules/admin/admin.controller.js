@@ -190,13 +190,20 @@ export const updatePendingProperty = catchAsync(async (req, res) => {
 
 export const getRunningBookings = catchAsync(async (req, res) => {
     const todayStr = new Date().toISOString().split('T')[0]; // "YYYY-MM-DD"
+    const { page = 1, limit = 10 } = req.query;
 
-    const activeBookings = await Booking.aggregate([
-        {
-            $match: {
-                endDate: { $gte: todayStr }
-            }
-        },
+    const parsedPage = parseInt(page);
+    const parsedLimit = parseInt(limit);
+    const skip = (parsedPage - 1) * parsedLimit;
+
+    const matchStage = {
+        $match: {
+            endDate: { $gte: todayStr }
+        }
+    };
+
+    const activeBookingsPipeline = [
+        matchStage,
         {
             $lookup: {
                 from: "properties",
@@ -212,9 +219,20 @@ export const getRunningBookings = catchAsync(async (req, res) => {
             }
         },
         {
+            $addFields: {
+                ownerObjectId: {
+                    $cond: {
+                        if: { $ifNull: ["$propertyDetails.ownerId", false] },
+                        then: { $toObjectId: "$propertyDetails.ownerId" },
+                        else: null
+                    }
+                }
+            }
+        },
+        {
             $lookup: {
                 from: "user",
-                localField: "propertyDetails.ownerId",
+                localField: "ownerObjectId",
                 foreignField: "_id",
                 as: "ownerDetails"
             }
@@ -266,12 +284,142 @@ export const getRunningBookings = catchAsync(async (req, res) => {
                     }
                 }
             }
-        }
+        },
+        { $sort: { endDate: 1 } },
+        { $skip: skip },
+        { $limit: parsedLimit }
+    ];
+
+    const [activeBookings, totalCountData] = await Promise.all([
+        Booking.aggregate(activeBookingsPipeline),
+        Booking.countDocuments(matchStage.$match)
     ]);
 
     res.status(200).json({
         success: true,
         message: "Running bookings retrieved successfully using aggregation",
+        totalBookings: totalCountData,
+        totalPages: Math.ceil(totalCountData / parsedLimit),
+        currentPage: parsedPage,
+        count: activeBookings.length,
         data: activeBookings,
+    });
+});
+
+export const getBookingHistory = catchAsync(async (req, res) => {
+    const todayStr = new Date().toISOString().split('T')[0]; // "YYYY-MM-DD"
+    const { page = 1, limit = 10 } = req.query;
+
+    const parsedPage = parseInt(page);
+    const parsedLimit = parseInt(limit);
+    const skip = (parsedPage - 1) * parsedLimit;
+
+    const matchStage = {
+        $match: {
+            endDate: { $lt: todayStr }
+        }
+    };
+
+    const pastBookingsPipeline = [
+        matchStage,
+        {
+            $lookup: {
+                from: "properties",
+                localField: "propertyId",
+                foreignField: "_id",
+                as: "propertyDetails"
+            }
+        },
+        {
+            $unwind: {
+                path: "$propertyDetails",
+                preserveNullAndEmptyArrays: true
+            }
+        },
+        {
+            $addFields: {
+                ownerObjectId: {
+                    $cond: {
+                        if: { $ifNull: ["$propertyDetails.ownerId", false] },
+                        then: { $toObjectId: "$propertyDetails.ownerId" },
+                        else: null
+                    }
+                }
+            }
+        },
+        {
+            $lookup: {
+                from: "user",
+                localField: "ownerObjectId",
+                foreignField: "_id",
+                as: "ownerDetails"
+            }
+        },
+        {
+            $unwind: {
+                path: "$ownerDetails",
+                preserveNullAndEmptyArrays: true
+            }
+        },
+        {
+            $project: {
+                _id: 0,
+                bookingId: "$_id",
+                payableAmount: 1,
+                startDate: 1,
+                endDate: 1,
+                paymentStatus: 1,
+                tenant: {
+                    id: "$tenantId",
+                    name: "$tenantName",
+                    email: "$tenantEmail",
+                    image: "$tenantImage"
+                },
+                owner: {
+                    $cond: {
+                        if: { $ifNull: ["$ownerDetails", false] },
+                        then: {
+                            id: "$ownerDetails._id",
+                            name: "$ownerDetails.name",
+                            email: "$ownerDetails.email",
+                            image: { $ifNull: ["$ownerDetails.image", "$ownerDetails.avatar"] }
+                        },
+                        else: null
+                    }
+                },
+                property: {
+                    $cond: {
+                        if: { $ifNull: ["$propertyDetails", false] },
+                        then: {
+                            id: "$propertyDetails._id",
+                            title: "$propertyDetails.title",
+                            location: "$propertyDetails.location",
+                            image: { $arrayElemAt: ["$propertyDetails.images", 0] },
+                            propertyType: "$propertyDetails.propertyType",
+                            rent: "$propertyDetails.rent"
+                        },
+                        else: null
+                    }
+                }
+            }
+        },
+        { $sort: { endDate: -1 } }, 
+        { $skip: skip },
+        { $limit: parsedLimit }
+    ];
+
+    const [pastBookings, totalCountData] = await Promise.all([
+        Booking.aggregate(pastBookingsPipeline),
+        Booking.countDocuments(matchStage.$match)
+    ]);
+
+    res.status(200).json({
+        success: true,
+        message: "Booking history retrieved successfully using aggregation",
+        totalBookings: totalCountData,
+        totalPages: Math.ceil(totalCountData / parsedLimit),
+        currentPage: parsedPage,
+        count: pastBookings.length,
+        data: pastBookings,
     });
 });
