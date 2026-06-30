@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import catchAsync from "../../utils/catchAsync.js";
 import Property from "../properties/property.model.js";
+import Booking from "../bookings/booking.model.js";
 
 export const getAllUser = catchAsync(async (req, res) => {
     const { search, role, page = 1, limit = 12 } = req.query;
@@ -186,3 +187,28 @@ export const updatePendingProperty = catchAsync(async (req, res) => {
         data: updatedProperty
     });
 });
+
+export const getRunningBookedProperties = catchAsync(async (req, res) => {
+    const { page = 1, limit = 10 } = req.query;
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const parsedLimit = parseInt(limit);
+
+    const [properties, totalProperties] = await Promise.all([
+        Property.find({ bookingStatus: "Booked" })
+            .skip(skip)
+            .limit(parsedLimit)
+            .sort({ updatedAt: -1 }),
+        Property.countDocuments({ bookingStatus: "Booked" })
+    ]);
+
+    res.status(200).json({
+        success: true,
+        count: properties.length,
+        totalProperties,
+        totalPages: Math.ceil(totalProperties / parsedLimit),
+        currentPage: parseInt(page),
+        data: properties
+    });
+});
+
