@@ -188,3 +188,90 @@ export const updatePendingProperty = catchAsync(async (req, res) => {
     });
 });
 
+export const getRunningBookings = catchAsync(async (req, res) => {
+    const todayStr = new Date().toISOString().split('T')[0]; // "YYYY-MM-DD"
+
+    const activeBookings = await Booking.aggregate([
+        {
+            $match: {
+                endDate: { $gte: todayStr }
+            }
+        },
+        {
+            $lookup: {
+                from: "properties",
+                localField: "propertyId",
+                foreignField: "_id",
+                as: "propertyDetails"
+            }
+        },
+        {
+            $unwind: {
+                path: "$propertyDetails",
+                preserveNullAndEmptyArrays: true
+            }
+        },
+        {
+            $lookup: {
+                from: "user",
+                localField: "propertyDetails.ownerId",
+                foreignField: "_id",
+                as: "ownerDetails"
+            }
+        },
+        {
+            $unwind: {
+                path: "$ownerDetails",
+                preserveNullAndEmptyArrays: true
+            }
+        },
+        {
+            $project: {
+                _id: 0,
+                bookingId: "$_id",
+                payableAmount: 1,
+                startDate: 1,
+                endDate: 1,
+                paymentStatus: 1,
+                tenant: {
+                    id: "$tenantId",
+                    name: "$tenantName",
+                    email: "$tenantEmail",
+                    image: "$tenantImage"
+                },
+                owner: {
+                    $cond: {
+                        if: { $ifNull: ["$ownerDetails", false] },
+                        then: {
+                            id: "$ownerDetails._id",
+                            name: "$ownerDetails.name",
+                            email: "$ownerDetails.email",
+                            image: { $ifNull: ["$ownerDetails.image", "$ownerDetails.avatar"] }
+                        },
+                        else: null
+                    }
+                },
+                property: {
+                    $cond: {
+                        if: { $ifNull: ["$propertyDetails", false] },
+                        then: {
+                            id: "$propertyDetails._id",
+                            title: "$propertyDetails.title",
+                            location: "$propertyDetails.location",
+                            image: { $arrayElemAt: ["$propertyDetails.images", 0] },
+                            propertyType: "$propertyDetails.propertyType",
+                            rent: "$propertyDetails.rent"
+                        },
+                        else: null
+                    }
+                }
+            }
+        }
+    ]);
+
+    res.status(200).json({
+        success: true,
+        message: "Running bookings retrieved successfully using aggregation",
+        data: activeBookings,
+    });
+});
