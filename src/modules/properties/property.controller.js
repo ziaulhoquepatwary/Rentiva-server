@@ -4,6 +4,7 @@ import catchAsync from "../../utils/catchAsync.js";
 import Property from "./property.model.js";
 import { propertyValidationSchema } from "./property.validation.js";
 import Favorite from "../favorites/favorite.model.js";
+import Booking from "../bookings/booking.model.js";
 
 
 export const createProperty = catchAsync(async (req, res) => {
@@ -34,19 +35,32 @@ export const createProperty = catchAsync(async (req, res) => {
 
 export const getAllProperty = catchAsync(async (req, res) => {
     const { location, propertyType, minPrice, maxPrice, sortBy } = req.query;
-    const page = req.query.page || 1;
-    const limit = req.query.limit || 12;
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 12;
+    const skip = (page - 1) * limit;
+
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    const expiredBookings = await Booking.find({ endDate: { $lt: todayStr } }).select("propertyId");
+
+    if (expiredBookings.length > 0) {
+        const propertyIdsToUpdate = expiredBookings.map(booking => booking.propertyId);
+
+        await Property.updateMany(
+            { _id: { $in: propertyIdsToUpdate }, bookingStatus: "Booked" },
+            { $set: { bookingStatus: "Available" } }
+        );
+    }
+
+
 
     const filter = {
         status: "Approved",
-        // bookingStatus: "Booked",
-    }
+        bookingStatus: "Available"
+    };
 
     if (location) {
-        filter.location = {
-            $regex: location,
-            $options: "i",
-        }
+        filter.location = { $regex: location, $options: "i" };
     }
 
     if (propertyType) {
@@ -55,14 +69,8 @@ export const getAllProperty = catchAsync(async (req, res) => {
 
     if (minPrice || maxPrice) {
         filter.rent = {};
-
-        if (minPrice) {
-            filter.rent.$gte = Number(minPrice);
-        }
-
-        if (maxPrice) {
-            filter.rent.$lte = Number(maxPrice);
-        }
+        if (minPrice) filter.rent.$gte = Number(minPrice);
+        if (maxPrice) filter.rent.$lte = Number(maxPrice);
     }
 
     let sortOption = { createdAt: -1 };
@@ -71,45 +79,42 @@ export const getAllProperty = catchAsync(async (req, res) => {
         case "price_asc":
             sortOption = { rent: 1 };
             break;
-
         case "price_desc":
             sortOption = { rent: -1 };
             break;
-
         case "oldest":
             sortOption = { createdAt: 1 };
             break;
-
         case "newest":
         default:
             sortOption = { createdAt: -1 };
             break;
     }
 
-    const currentPage = Number(page);
-    const perPage = Number(limit);
-    const skip = (currentPage - 1) * perPage;
-
-    const total = await Property.countDocuments(filter);
-
-    const properties = await Property.find(filter)
-        .select("title location propertyType rent images")
-        .sort(sortOption)
-        .skip(skip)
-        .limit(perPage);
+    const [totalPropertiesInDB, totalMatched, properties] = await Promise.all([
+        Property.countDocuments({}),
+        Property.countDocuments(filter),
+        Property.find(filter)
+            .select("title location propertyType rent images")
+            .sort(sortOption)
+            .skip(skip)
+            .limit(limit)
+    ]);
 
     res.status(200).json({
         success: true,
         message: "Properties fetched successfully",
         meta: {
-            page: currentPage,
-            limit: perPage,
-            total,
-            totalPage: Math.ceil(total / perPage),
+            page,
+            limit,
+            totalPropertiesInDB,
+            total: totalMatched,
+            totalPage: Math.ceil(totalMatched / limit),
         },
         data: properties,
     });
 });
+
 
 export const getSingleProperty = catchAsync(async (req, res) => {
     const { id } = req.params;
