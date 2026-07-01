@@ -11,7 +11,7 @@ router.get("/", getAllProperty)
 router.get("/owner-property", verifyToken, getMyProperties)
 router.get("/:id", verifyToken, getSingleProperty)
 router.post("/", verifyToken, protectRoute(ROLES.OWNER), createProperty);
-router.patch("/:id", updateProperty)
+router.patch("/:id", verifyToken, updateProperty)
 router.patch("/admin/:id", updatePropertyStatus)
 router.delete("/:id", deleteProperty)
 

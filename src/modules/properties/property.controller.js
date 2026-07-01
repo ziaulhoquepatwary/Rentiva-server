@@ -199,7 +199,9 @@ export const updateProperty = catchAsync(async (req, res) => {
     // Prevent updating protected fields
     delete req.body.status;
     delete req.body.rejectionFeedback;
-    delete req.body.ownerId;
+
+    body.status = "Pending";
+    body.rejectionFeedback = null;
 
     const updatedProperty = await Property.findByIdAndUpdate(
         id,
@@ -212,7 +214,7 @@ export const updateProperty = catchAsync(async (req, res) => {
 
     res.status(200).json({
         success: true,
-        message: "Property updated successfully",
+        message: "Property updated successfully and is now pending admin approval.",
         data: updatedProperty,
     });
 });
