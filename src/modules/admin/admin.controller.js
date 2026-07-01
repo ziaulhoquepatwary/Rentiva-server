@@ -403,7 +403,7 @@ export const getBookingHistory = catchAsync(async (req, res) => {
                 }
             }
         },
-        { $sort: { endDate: -1 } }, 
+        { $sort: { endDate: -1 } },
         { $skip: skip },
         { $limit: parsedLimit }
     ];
@@ -421,5 +421,28 @@ export const getBookingHistory = catchAsync(async (req, res) => {
         currentPage: parsedPage,
         count: pastBookings.length,
         data: pastBookings,
+    });
+});
+
+export const getAdminDashboardStats = catchAsync(async (req, res) => {
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    const [totalUsers, totalOwners, totalTenants, totalProperties, totalBookings] = await Promise.all([
+        mongoose.connection.collection("user").countDocuments({}),
+        mongoose.connection.collection("user").countDocuments({ role: "owner" }),
+        mongoose.connection.collection("user").countDocuments({ role: "tenant" }),
+        Property.countDocuments({}),
+        Booking.countDocuments({})
+    ]);
+
+    res.status(200).json({
+        success: true,
+        data: {
+            totalUsers,
+            totalOwners,
+            totalTenants,
+            totalProperties,
+            totalBookings
+        }
     });
 });
