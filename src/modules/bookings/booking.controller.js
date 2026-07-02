@@ -5,6 +5,7 @@ import catchAsync from "../../utils/catchAsync.js";
 import { bookingValidationSchema } from "./booking.validation.js";
 import Property from "../properties/property.model.js";
 import mongoose from "mongoose";
+import { createEarningRecord } from "../earning/earning.helper.js";
 
 
 export const handleStripeWebhook = catchAsync(async (req, res) => {
@@ -46,7 +47,7 @@ export const handleStripeWebhook = catchAsync(async (req, res) => {
         }
         const ownerId = propertyInfo.ownerId;
 
-        // Timeline calculation alignment based on system date parameters
+        // Timeline calculation 
         const start = new Date();
         const end = new Date();
 
@@ -84,8 +85,9 @@ export const handleStripeWebhook = catchAsync(async (req, res) => {
 
         bookingValidationSchema.parse(bookingPayload);
 
-        // Construct Mongoose Document Instance mapping
-        await Booking.create(bookingPayload);
+        const savedBooking = await Booking.create(bookingPayload);
+
+        await createEarningRecord(savedBooking);
 
         //  bookingStatus Change- "Booked"
         await Property.findByIdAndUpdate(
@@ -151,7 +153,6 @@ export const getTenantBookings = catchAsync(async (req, res) => {
         data: bookings,
     });
 });
-
 
 export const getOwnerBookedProperties = catchAsync(async (req, res) => {
     const userId = req.user.id;
