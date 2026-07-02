@@ -12,14 +12,14 @@ export const verifyToken = async (req, res, next) => {
             headers: fromNodeHeaders(req.headers),
         });
 
+        console.log(session);
+
         if (!session || !session.user) {
             return res.status(401).json({
                 success: false,
                 message: "Unauthorized! Please login first."
             });
         };
-
-        // console.log(session);
 
         req.user = {
             id: session.user.id,

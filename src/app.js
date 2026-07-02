@@ -11,7 +11,7 @@ import AdminRoutes from "./modules/admin/admin.routes.js"
 
 const createApp = (auth) => {
     const app = express();
-
+    app.set("trust proxy", 1);
 
     app.use(cors({
         origin: [
