@@ -6,6 +6,7 @@ import { bookingValidationSchema } from "./booking.validation.js";
 import Property from "../properties/property.model.js";
 import mongoose from "mongoose";
 import { createEarningRecord } from "../earning/earning.helper.js";
+import Favorite from "../favorites/favorite.model.js";
 
 
 export const handleStripeWebhook = catchAsync(async (req, res) => {
@@ -204,3 +205,60 @@ export const getOwnerBookedProperties = catchAsync(async (req, res) => {
         data: bookings,
     });
 });
+
+export const getTenantDashboardStats = catchAsync(async (req, res) => {
+    const tenantId = req.user?.id;
+
+    if (!tenantId) {
+        return res.status(400).json({ success: false, message: "Tenant ID is required" });
+    }
+
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    const totalFavorites = await Favorite.countDocuments({ userId: tenantId });
+
+    const bookingStatsPipeline = [
+        {
+            $match: { tenantId: tenantId }
+        },
+        {
+            $facet: {
+                totalBookingsCount: [
+                    { $count: "count" }
+                ],
+                activeRentalsCount: [
+                    {
+                        $match: { endDate: { $gte: todayStr } }
+                    },
+                    { $count: "count" }
+                ],
+                spendCalculation: [
+                    {
+                        $group: {
+                            _id: null,
+                            totalAmount: { $sum: { $toDouble: "$payableAmount" } }
+                        }
+                    }
+                ]
+            }
+        }
+    ];
+
+    const aggregationResult = await Booking.aggregate(bookingStatsPipeline);
+    const statsData = aggregationResult[0];
+
+    const totalBookings = statsData?.totalBookingsCount[0]?.count || 0;
+    const activeRentals = statsData?.activeRentalsCount[0]?.count || 0;
+    const totalSpend = statsData?.spendCalculation[0]?.totalAmount || 0;
+
+    res.status(200).json({
+        success: true,
+        message: "Tenant dashboard stats retrieved successfully",
+        data: {
+            totalBookings,
+            totalFavorites,
+            activeRentals,
+            totalSpend: Number(totalSpend.toFixed(2))
+        }
+    });
+})
