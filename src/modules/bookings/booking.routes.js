@@ -1,5 +1,5 @@
 import express from "express";
-import { getOwnerBookedProperties, getTenantBookings, getTenantDashboardStats, handleStripeWebhook } from "./booking.controller.js";
+import { checkBookingStatus, getOwnerBookedProperties, getTenantBookings, getTenantDashboardStats, handleStripeWebhook } from "./booking.controller.js";
 import { verifyToken } from "../../middleware/authMiddleware.js";
 
 const router = express.Router();
@@ -11,5 +11,6 @@ router.use(express.json());
 router.get("/tenant-booking", verifyToken, getTenantBookings);
 router.get("/owner-booked", verifyToken, getOwnerBookedProperties);
 router.get("/tenant/deshboard-overview", verifyToken, getTenantDashboardStats);
+router.get("/check-status/:sessionId", checkBookingStatus);
 
 export default router;

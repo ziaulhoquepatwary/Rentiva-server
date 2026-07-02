@@ -7,6 +7,7 @@ import Property from "../properties/property.model.js";
 import mongoose from "mongoose";
 import { createEarningRecord } from "../earning/earning.helper.js";
 import Favorite from "../favorites/favorite.model.js";
+import { refundStripePayment } from "./booking.helper.js";
 
 
 export const handleStripeWebhook = catchAsync(async (req, res) => {
@@ -33,6 +34,23 @@ export const handleStripeWebhook = catchAsync(async (req, res) => {
         const { userId, propertyId, durationType } = session.metadata;
         const payableAmount = session.amount_total / 100;
         const stripeSessionId = session.id;
+
+        const propertyInfodata = await Property.findById(propertyId);
+
+        if (!propertyInfodata) {
+            throw new AppError(404, "Property not found for booking");
+        }
+
+        if (propertyInfodata.bookingStatus === "Booked") {
+            console.warn(`[CRITICAL] Overbooking detected for Property ID: ${propertyId}. Initiating auto-refund.`);
+
+            await refundStripePayment(stripeSessionId);
+
+            return res.status(200).json({
+                success: false,
+                message: "Property already booked. Payment has been automatically refunded to the user.",
+            });
+        }
 
         const tenant = await mongoose.connection.collection("user").findOne(
             { _id: new mongoose.Types.ObjectId(userId) }
@@ -261,4 +279,28 @@ export const getTenantDashboardStats = catchAsync(async (req, res) => {
             totalSpend: Number(totalSpend.toFixed(2))
         }
     });
-})
+});
+
+export const checkBookingStatus = catchAsync(async (req, res) => {
+    const { sessionId } = req.params;
+
+    if (!sessionId) {
+        throw new AppError(400, "Stripe session ID is required");
+    }
+
+    const booking = await Booking.findOne({ stripeSessionId: sessionId });
+
+    if (booking) {
+        return res.status(200).json({
+            success: true,
+            status: "success",
+            message: "Your booking has been successfully confirmed."
+        });
+    }
+
+    res.status(200).json({
+        success: false,
+        status: "refunded",
+        message: "This slot was just booked by another user. Your payment has been automatically refunded. It will reflect in your account within 3-7 business days."
+    });
+});
